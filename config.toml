@@ -18,6 +18,8 @@ highlight_code = true
 [extra]
 # Put all your custom variables here
 theme = "toggle"
-socials = []
+socials = [
+  { name = "github", url = "https://github.com/tesujimath", icon = "github" },
+]
 
 menu = [{ name = "about", url = "/pages/about", weight = 1 }]
