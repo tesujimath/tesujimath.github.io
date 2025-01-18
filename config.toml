@@ -3,9 +3,12 @@ title = "tesujimath"
 description = "Programming ponderations"
 author = "Simon Guest"
 
+theme = "apollo"
 compile_sass = true
 build_search_index = true
 generate_feeds = true
+
+taxonomies = [{ name = "tags" }]
 
 [markdown]
 # Whether to do syntax highlighting
@@ -14,6 +17,7 @@ highlight_code = true
 
 [extra]
 # Put all your custom variables here
-theme = "apollo"
-menu = []
+theme = "toggle"
 socials = []
+
+menu = [{ name = "about", url = "/pages/about", weight = 1 }]

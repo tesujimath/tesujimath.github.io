@@ -1,5 +1,9 @@
 +++
 title = "Path canonicalization is unergonomic"
+date = "2025-01-20"
+
+[taxonomies]
+tags = ["rust"]
 +++
 
 # Why?
