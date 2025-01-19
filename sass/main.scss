@@ -1,0 +1,14 @@
+@import "../themes/apollo/sass/main.scss"
+
+:root.light {
+  --primary-color: #0b6632;
+}
+
+:root.dark {
+  --primary-color: #0b6632;
+}
+
+.clipboard-button,
+.clipboard-button svg {
+  fill: #0b6632;
+}
