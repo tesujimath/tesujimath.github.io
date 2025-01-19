@@ -8,7 +8,7 @@ tags = ["rust"]
 
 Rust programmers attach great importance to correctness and this is to be celebrated, but there are sometimes downsides.
 
-Path canonicalization has become prevalent in the Rust community, for reasons which I will explain.  It is a solution to a very real problemm but I  suggest that it is not a good solution and there is a better alternative.  I argue for increasing ergonomics at no cost in correctness.
+Path canonicalization has become prevalent in the Rust community, for reasons which I will explain.  It is a solution to a very real problem but I  suggest that it is not a good solution and there is a better alternative.  I argue for increasing ergonomics at no cost in correctness.
 
 I will discuss [what path canonicalization is](#what), [why it is in widespread use](#why), [what is unergonomic about this approach](#ergonomics), and [a more ergonomic alternative](#an-alternative).
 
@@ -30,7 +30,7 @@ The problem arises when the last component in the path is a symbolic link. In th
 
 For a thorough description of the problem, see Rob Pike's seminal paper [Getting Dot-Dot Right](https://9p.io/sys/doc/lexnames.html).
 
-Here's a simple example. Suppose that we have a configuration file format that supports file inclusion, so `main.cfg` contains the text `include "included.cfg"`
+Here is a simple example. Suppose that we have a configuration file format that supports file inclusion, so `main.cfg` contains the text `include "included.cfg"`
 
 Perhaps we have a symbolic link to such a configuration.
 
@@ -47,7 +47,7 @@ Perhaps we have a symbolic link to such a configuration.
 
 How should the program process the configuration file `a/main.cfg`?
 
-Here's the wrong way to do it.
+Here is the wrong way to do it.
 
 ```
 Path::new("a/main.cfg")
@@ -58,7 +58,7 @@ Path::new("a/main.cfg")
 // returns "a/included.cfg", which doesn't exist
 ```
 
-Here's a common solution to this problem.
+Here is a common solution to this problem.
 
 ```
         Path::new("a/main.cfg")

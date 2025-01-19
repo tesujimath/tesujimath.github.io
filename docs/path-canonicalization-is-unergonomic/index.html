@@ -78,7 +78,7 @@
 
     <script src=https://tesujimath.org/js/mermaid.js></script>
 
-    <script defer src="https://tesujimath.org/search_index.en.js?h=5f8092ec6b004a261fbf"></script>
+    <script defer src="https://tesujimath.org/search_index.en.js?h=ffb763f3e3412c3e70e0"></script>
         <script defer src="https://tesujimath.org/js/searchElasticlunr.min.js?h=3626c0ef99daa745b31e"></script></head>
 
 
@@ -212,7 +212,7 @@
 
         <section class="body">
             <p>Rust programmers attach great importance to correctness and this is to be celebrated, but there are sometimes downsides.</p>
-<p>Path canonicalization has become prevalent in the Rust community, for reasons which I will explain.  It is a solution to a very real problemm but I  suggest that it is not a good solution and there is a better alternative.  I argue for increasing ergonomics at no cost in correctness.</p>
+<p>Path canonicalization has become prevalent in the Rust community, for reasons which I will explain.  It is a solution to a very real problem but I  suggest that it is not a good solution and there is a better alternative.  I argue for increasing ergonomics at no cost in correctness.</p>
 <p>I will discuss <a href="https://tesujimath.org/path-canonicalization-is-unergonomic/#what">what path canonicalization is</a>, <a href="https://tesujimath.org/path-canonicalization-is-unergonomic/#why">why it is in widespread use</a>, <a href="https://tesujimath.org/path-canonicalization-is-unergonomic/#ergonomics">what is unergonomic about this approach</a>, and <a href="https://tesujimath.org/path-canonicalization-is-unergonomic/#an-alternative">a more ergonomic alternative</a>.</p>
 <h1 id="what"><a class="zola-anchor" href="#what" aria-label="Anchor link for: what">What</a></h1>
 <p>Path canonicalization is use of <a href="https://doc.rust-lang.org/std/fs/fn.canonicalize.html"><code>std::fs::canonicalize</code></a> aka <a href="https://doc.rust-lang.org/std/path/struct.Path.html#method.canonicalize"><code>Path::canonicalize</code></a>, which (to quote the documentation) returns the canonical, absolute form of a path with all intermediate components normalized and symbolic links resolved.</p>
@@ -223,7 +223,7 @@
 <p>The Rust standard library method <a href="https://doc.rust-lang.org/std/path/struct.Path.html#method.parent"><code>Path::parent</code></a> determines this purely lexically, that is without reference to the filesystem.  Using this method on anything other than a canonicalized path could lead to an incorrect result.</p>
 <p>The problem arises when the last component in the path is a symbolic link. In that case, the parent or containing directory must be determined from the ultimate target of the symbolic link.</p>
 <p>For a thorough description of the problem, see Rob Pike's seminal paper <a href="https://9p.io/sys/doc/lexnames.html">Getting Dot-Dot Right</a>.</p>
-<p>Here's a simple example. Suppose that we have a configuration file format that supports file inclusion, so <code>main.cfg</code> contains the text <code>include "included.cfg"</code></p>
+<p>Here is a simple example. Suppose that we have a configuration file format that supports file inclusion, so <code>main.cfg</code> contains the text <code>include "included.cfg"</code></p>
 <p>Perhaps we have a symbolic link to such a configuration.</p>
 <pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>/absolute/path/to/cwd/
 </span><span>│
@@ -235,7 +235,7 @@
 </span><span>    └── included.cfg
 </span></code></pre>
 <p>How should the program process the configuration file <code>a/main.cfg</code>?</p>
-<p>Here's the wrong way to do it.</p>
+<p>Here is the wrong way to do it.</p>
 <pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>Path::new(&quot;a/main.cfg&quot;)
 </span><span>    .parent()
 </span><span>    .unwrap()
@@ -243,7 +243,7 @@
 </span><span>
 </span><span>// returns &quot;a/included.cfg&quot;, which doesn&#39;t exist
 </span></code></pre>
-<p>Here's a common solution to this problem.</p>
+<p>Here is a common solution to this problem.</p>
 <pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>        Path::new(&quot;a/main.cfg&quot;)
 </span><span>            .canonicalize()
 </span><span>            .unwrap()

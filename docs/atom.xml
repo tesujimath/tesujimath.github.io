@@ -24,7 +24,7 @@
         <id>https://tesujimath.org/path-canonicalization-is-unergonomic/</id>
         
         <content type="html" xml:base="https://tesujimath.org/path-canonicalization-is-unergonomic/">&lt;p&gt;Rust programmers attach great importance to correctness and this is to be celebrated, but there are sometimes downsides.&lt;&#x2F;p&gt;
-&lt;p&gt;Path canonicalization has become prevalent in the Rust community, for reasons which I will explain.  It is a solution to a very real problemm but I  suggest that it is not a good solution and there is a better alternative.  I argue for increasing ergonomics at no cost in correctness.&lt;&#x2F;p&gt;
+&lt;p&gt;Path canonicalization has become prevalent in the Rust community, for reasons which I will explain.  It is a solution to a very real problem but I  suggest that it is not a good solution and there is a better alternative.  I argue for increasing ergonomics at no cost in correctness.&lt;&#x2F;p&gt;
 &lt;p&gt;I will discuss &lt;a href=&quot;https:&#x2F;&#x2F;tesujimath.org&#x2F;path-canonicalization-is-unergonomic&#x2F;#what&quot;&gt;what path canonicalization is&lt;&#x2F;a&gt;, &lt;a href=&quot;https:&#x2F;&#x2F;tesujimath.org&#x2F;path-canonicalization-is-unergonomic&#x2F;#why&quot;&gt;why it is in widespread use&lt;&#x2F;a&gt;, &lt;a href=&quot;https:&#x2F;&#x2F;tesujimath.org&#x2F;path-canonicalization-is-unergonomic&#x2F;#ergonomics&quot;&gt;what is unergonomic about this approach&lt;&#x2F;a&gt;, and &lt;a href=&quot;https:&#x2F;&#x2F;tesujimath.org&#x2F;path-canonicalization-is-unergonomic&#x2F;#an-alternative&quot;&gt;a more ergonomic alternative&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
 &lt;h1 id=&quot;what&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#what&quot; aria-label=&quot;Anchor link for: what&quot;&gt;What&lt;&#x2F;a&gt;&lt;&#x2F;h1&gt;
 &lt;p&gt;Path canonicalization is use of &lt;a href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;std&#x2F;fs&#x2F;fn.canonicalize.html&quot;&gt;&lt;code&gt;std::fs::canonicalize&lt;&#x2F;code&gt;&lt;&#x2F;a&gt; aka &lt;a href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;std&#x2F;path&#x2F;struct.Path.html#method.canonicalize&quot;&gt;&lt;code&gt;Path::canonicalize&lt;&#x2F;code&gt;&lt;&#x2F;a&gt;, which (to quote the documentation) returns the canonical, absolute form of a path with all intermediate components normalized and symbolic links resolved.&lt;&#x2F;p&gt;
@@ -35,7 +35,7 @@
 &lt;p&gt;The Rust standard library method &lt;a href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;std&#x2F;path&#x2F;struct.Path.html#method.parent&quot;&gt;&lt;code&gt;Path::parent&lt;&#x2F;code&gt;&lt;&#x2F;a&gt; determines this purely lexically, that is without reference to the filesystem.  Using this method on anything other than a canonicalized path could lead to an incorrect result.&lt;&#x2F;p&gt;
 &lt;p&gt;The problem arises when the last component in the path is a symbolic link. In that case, the parent or containing directory must be determined from the ultimate target of the symbolic link.&lt;&#x2F;p&gt;
 &lt;p&gt;For a thorough description of the problem, see Rob Pike&#x27;s seminal paper &lt;a href=&quot;https:&#x2F;&#x2F;9p.io&#x2F;sys&#x2F;doc&#x2F;lexnames.html&quot;&gt;Getting Dot-Dot Right&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
-&lt;p&gt;Here&#x27;s a simple example. Suppose that we have a configuration file format that supports file inclusion, so &lt;code&gt;main.cfg&lt;&#x2F;code&gt; contains the text &lt;code&gt;include &quot;included.cfg&quot;&lt;&#x2F;code&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;Here is a simple example. Suppose that we have a configuration file format that supports file inclusion, so &lt;code&gt;main.cfg&lt;&#x2F;code&gt; contains the text &lt;code&gt;include &quot;included.cfg&quot;&lt;&#x2F;code&gt;&lt;&#x2F;p&gt;
 &lt;p&gt;Perhaps we have a symbolic link to such a configuration.&lt;&#x2F;p&gt;
 &lt;pre style=&quot;background-color:#2b303b;color:#c0c5ce;&quot;&gt;&lt;code&gt;&lt;span&gt;&#x2F;absolute&#x2F;path&#x2F;to&#x2F;cwd&#x2F;
 &lt;&#x2F;span&gt;&lt;span&gt;│
@@ -47,7 +47,7 @@
 &lt;&#x2F;span&gt;&lt;span&gt;    └── included.cfg
 &lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
 &lt;p&gt;How should the program process the configuration file &lt;code&gt;a&#x2F;main.cfg&lt;&#x2F;code&gt;?&lt;&#x2F;p&gt;
-&lt;p&gt;Here&#x27;s the wrong way to do it.&lt;&#x2F;p&gt;
+&lt;p&gt;Here is the wrong way to do it.&lt;&#x2F;p&gt;
 &lt;pre style=&quot;background-color:#2b303b;color:#c0c5ce;&quot;&gt;&lt;code&gt;&lt;span&gt;Path::new(&amp;quot;a&#x2F;main.cfg&amp;quot;)
 &lt;&#x2F;span&gt;&lt;span&gt;    .parent()
 &lt;&#x2F;span&gt;&lt;span&gt;    .unwrap()
@@ -55,7 +55,7 @@
 &lt;&#x2F;span&gt;&lt;span&gt;
 &lt;&#x2F;span&gt;&lt;span&gt;&#x2F;&#x2F; returns &amp;quot;a&#x2F;included.cfg&amp;quot;, which doesn&amp;#39;t exist
 &lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
-&lt;p&gt;Here&#x27;s a common solution to this problem.&lt;&#x2F;p&gt;
+&lt;p&gt;Here is a common solution to this problem.&lt;&#x2F;p&gt;
 &lt;pre style=&quot;background-color:#2b303b;color:#c0c5ce;&quot;&gt;&lt;code&gt;&lt;span&gt;        Path::new(&amp;quot;a&#x2F;main.cfg&amp;quot;)
 &lt;&#x2F;span&gt;&lt;span&gt;            .canonicalize()
 &lt;&#x2F;span&gt;&lt;span&gt;            .unwrap()
