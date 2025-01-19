@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+    <title>tesujimath</title>
+    <subtitle>Programming ponderations</subtitle>
+    <link rel="self" type="application/atom+xml" href="https://tesujimath.org/atom.xml"/>
+    <link rel="alternate" type="text/html" href="https://tesujimath.org"/>
+    <generator uri="https://www.getzola.org/">Zola</generator>
+    <updated>2025-01-20T00:00:00+00:00</updated>
+    <id>https://tesujimath.org/atom.xml</id>
+    <entry xml:lang="en">
+        <title>Path canonicalization is unergonomic</title>
+        <published>2025-01-20T00:00:00+00:00</published>
+        <updated>2025-01-20T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              Simon Guest
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://tesujimath.org/path-canonicalization-is-unergonomic/"/>
+        <id>https://tesujimath.org/path-canonicalization-is-unergonomic/</id>
+        
+        <content type="html" xml:base="https://tesujimath.org/path-canonicalization-is-unergonomic/">&lt;p&gt;Rust programmers attach great importance to correctness and this is to be celebrated, but there are sometimes downsides.&lt;&#x2F;p&gt;
+&lt;p&gt;Path canonicalization has become prevalent in the Rust community, for reasons which I will explain.  It is a solution to a very real problemm but I  suggest that it is not a good solution and there is a better alternative.  I argue for increasing ergonomics at no cost in correctness.&lt;&#x2F;p&gt;
+&lt;p&gt;I will discuss &lt;a href=&quot;https:&#x2F;&#x2F;tesujimath.org&#x2F;path-canonicalization-is-unergonomic&#x2F;#what&quot;&gt;what path canonicalization is&lt;&#x2F;a&gt;, &lt;a href=&quot;https:&#x2F;&#x2F;tesujimath.org&#x2F;path-canonicalization-is-unergonomic&#x2F;#why&quot;&gt;why it is in widespread use&lt;&#x2F;a&gt;, &lt;a href=&quot;https:&#x2F;&#x2F;tesujimath.org&#x2F;path-canonicalization-is-unergonomic&#x2F;#ergonomics&quot;&gt;what is unergonomic about this approach&lt;&#x2F;a&gt;, and &lt;a href=&quot;https:&#x2F;&#x2F;tesujimath.org&#x2F;path-canonicalization-is-unergonomic&#x2F;#an-alternative&quot;&gt;a more ergonomic alternative&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;what&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#what&quot; aria-label=&quot;Anchor link for: what&quot;&gt;What&lt;&#x2F;a&gt;&lt;&#x2F;h1&gt;
+&lt;p&gt;Path canonicalization is use of &lt;a href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;std&#x2F;fs&#x2F;fn.canonicalize.html&quot;&gt;&lt;code&gt;std::fs::canonicalize&lt;&#x2F;code&gt;&lt;&#x2F;a&gt; aka &lt;a href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;std&#x2F;path&#x2F;struct.Path.html#method.canonicalize&quot;&gt;&lt;code&gt;Path::canonicalize&lt;&#x2F;code&gt;&lt;&#x2F;a&gt;, which (to quote the documentation) returns the canonical, absolute form of a path with all intermediate components normalized and symbolic links resolved.&lt;&#x2F;p&gt;
+&lt;p&gt;That is, relative paths are made absolute (with reference to the current working directory, or &lt;code&gt;cwd&lt;&#x2F;code&gt;), and any symbolic links along the path are resolved to their ultimate destination, with reference to the filesystem.  &quot;Ultimate&quot; here acknowledges that symbolic links can refer to other symbolic links.  The resolution is ruthless in expunging all such links from the resulting path.&lt;&#x2F;p&gt;
+&lt;p&gt;Eager and early path canonicalization has become a common pattern in Rust programs.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;why&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#why&quot; aria-label=&quot;Anchor link for: why&quot;&gt;Why&lt;&#x2F;a&gt;&lt;&#x2F;h1&gt;
+&lt;p&gt;By far the the biggest reason for eager and early path canonicalization is to mitigate breakage in finding a parent directory, or the containing directory of a file.&lt;&#x2F;p&gt;
+&lt;p&gt;The Rust standard library method &lt;a href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;std&#x2F;path&#x2F;struct.Path.html#method.parent&quot;&gt;&lt;code&gt;Path::parent&lt;&#x2F;code&gt;&lt;&#x2F;a&gt; determines this purely lexically, that is without reference to the filesystem.  Using this method on anything other than a canonicalized path could lead to an incorrect result.&lt;&#x2F;p&gt;
+&lt;p&gt;The problem arises when the last component in the path is a symbolic link. In that case, the parent or containing directory must be determined from the ultimate target of the symbolic link.&lt;&#x2F;p&gt;
+&lt;p&gt;For a thorough description of the problem, see Rob Pike&#x27;s seminal paper &lt;a href=&quot;https:&#x2F;&#x2F;9p.io&#x2F;sys&#x2F;doc&#x2F;lexnames.html&quot;&gt;Getting Dot-Dot Right&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;Here&#x27;s a simple example. Suppose that we have a configuration file format that supports file inclusion, so &lt;code&gt;main.cfg&lt;&#x2F;code&gt; contains the text &lt;code&gt;include &quot;included.cfg&quot;&lt;&#x2F;code&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;Perhaps we have a symbolic link to such a configuration.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;color:#c0c5ce;&quot;&gt;&lt;code&gt;&lt;span&gt;&#x2F;absolute&#x2F;path&#x2F;to&#x2F;cwd&#x2F;
+&lt;&#x2F;span&gt;&lt;span&gt;│
+&lt;&#x2F;span&gt;&lt;span&gt;├── a&#x2F;
+&lt;&#x2F;span&gt;&lt;span&gt;│   └── main.cfg ⟶ ..&#x2F;b&#x2F;main.cfg
+&lt;&#x2F;span&gt;&lt;span&gt;│
+&lt;&#x2F;span&gt;&lt;span&gt;└── b&#x2F;
+&lt;&#x2F;span&gt;&lt;span&gt;    ├── main.cfg
+&lt;&#x2F;span&gt;&lt;span&gt;    └── included.cfg
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;How should the program process the configuration file &lt;code&gt;a&#x2F;main.cfg&lt;&#x2F;code&gt;?&lt;&#x2F;p&gt;
+&lt;p&gt;Here&#x27;s the wrong way to do it.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;color:#c0c5ce;&quot;&gt;&lt;code&gt;&lt;span&gt;Path::new(&amp;quot;a&#x2F;main.cfg&amp;quot;)
+&lt;&#x2F;span&gt;&lt;span&gt;    .parent()
+&lt;&#x2F;span&gt;&lt;span&gt;    .unwrap()
+&lt;&#x2F;span&gt;&lt;span&gt;    .join(&amp;quot;included.cfg&amp;quot;)
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;&#x2F;&#x2F; returns &amp;quot;a&#x2F;included.cfg&amp;quot;, which doesn&amp;#39;t exist
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Here&#x27;s a common solution to this problem.&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;color:#c0c5ce;&quot;&gt;&lt;code&gt;&lt;span&gt;        Path::new(&amp;quot;a&#x2F;main.cfg&amp;quot;)
+&lt;&#x2F;span&gt;&lt;span&gt;            .canonicalize()
+&lt;&#x2F;span&gt;&lt;span&gt;            .unwrap()
+&lt;&#x2F;span&gt;&lt;span&gt;            .parent()
+&lt;&#x2F;span&gt;&lt;span&gt;            .unwrap()
+&lt;&#x2F;span&gt;&lt;span&gt;            .join(&amp;quot;included.cfg&amp;quot;)
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;&#x2F;&#x2F; returns &amp;quot;&#x2F;absolute&#x2F;path&#x2F;to&#x2F;cwd&#x2F;b&#x2F;included.cfg&amp;quot;, which is correct but unergonomic
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h1 id=&quot;ergonomics&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#ergonomics&quot; aria-label=&quot;Anchor link for: ergonomics&quot;&gt;Ergonomics&lt;&#x2F;a&gt;&lt;&#x2F;h1&gt;
+&lt;p&gt;Ergonomics is about efficiency and comfort.  So what is unergonomic about using &lt;code&gt;Path::canonicalize()&lt;&#x2F;code&gt; to mitigate this potential problem?  Two things.&lt;&#x2F;p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;relative paths are discarded in favour of absolute paths&lt;&#x2F;p&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;
+&lt;p&gt;symbolic links are ruthlessly resolved and eliminated&lt;&#x2F;p&gt;
+&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+&lt;h2 id=&quot;relative-paths&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#relative-paths&quot; aria-label=&quot;Anchor link for: relative-paths&quot;&gt;Relative Paths&lt;&#x2F;a&gt;&lt;&#x2F;h2&gt;
+&lt;p&gt;Relative paths enjoy the benefits of portability and simplicity.  Who has the luxury of the same absolute path for home directories on all their systems, or their project directories?&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;symbolic-links&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#symbolic-links&quot; aria-label=&quot;Anchor link for: symbolic-links&quot;&gt;Symbolic Links&lt;&#x2F;a&gt;&lt;&#x2F;h2&gt;
+&lt;p&gt;Symbolic links are arguably a filesystem abstraction.  Using symbolic links, a view can be constructed for many and varied reasons.  Violating this abstraction by peeking inside the links is rude at best.&lt;&#x2F;p&gt;
+&lt;p&gt;Two examples of systems making extensive use of symbolic links are &lt;a href=&quot;https:&#x2F;&#x2F;nixos.org&#x2F;&quot;&gt;Nix&lt;&#x2F;a&gt; and &lt;a href=&quot;https:&#x2F;&#x2F;www.gnu.org&#x2F;software&#x2F;stow&#x2F;&quot;&gt;GNU Stow&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;nix-community.github.io&#x2F;home-manager&#x2F;&quot;&gt;Nix Home Manager&lt;&#x2F;a&gt; brings the declarative and unified approach of Nix to managing one&#x27;s home configuration, dotfiles, scripts, etc. Using Home Manager, all the usual dotfiles become symbolic links into the Nix store.  For example:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;color:#c0c5ce;&quot;&gt;&lt;code&gt;&lt;span&gt;&amp;gt; ls -l .config&#x2F;nushell&#x2F;*.nu
+&lt;&#x2F;span&gt;&lt;span&gt;.config&#x2F;nushell&#x2F;config.nu -&amp;gt; &#x2F;nix&#x2F;store&#x2F;mkfxkxgjsb81ad68rgyx2bzgq51rvw6b-home-manager-files&#x2F;.config&#x2F;nushell&#x2F;config.nu
+&lt;&#x2F;span&gt;&lt;span&gt;.config&#x2F;nushell&#x2F;env.nu -&amp;gt; &#x2F;nix&#x2F;store&#x2F;mkfxkxgjsb81ad68rgyx2bzgq51rvw6b-home-manager-files&#x2F;.config&#x2F;nushell&#x2F;env.nu
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;It would be most uncomfortable if these Nix store paths became exposed to applications, or worse, stored in application configuration, not least because the paths in the Nix store depend on their content and so may be expected to change across Home Manager generations.&lt;&#x2F;p&gt;
+&lt;h1 id=&quot;an-alternative&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#an-alternative&quot; aria-label=&quot;Anchor link for: an-alternative&quot;&gt;An alternative&lt;&#x2F;a&gt;&lt;&#x2F;h1&gt;
+&lt;p&gt;If the goal is both correctness &lt;em&gt;and&lt;&#x2F;em&gt; ergonomics, what can be done?&lt;&#x2F;p&gt;
+&lt;p&gt;One answer is to abandon the standard library &lt;a href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;std&#x2F;path&#x2F;struct.Path.html#method.parent&quot;&gt;&lt;code&gt;Path::parent&lt;&#x2F;code&gt;&lt;&#x2F;a&gt; method and instead determine the parent directory of a file with reference to the filesystem.  Special handling is required only in the case where the final path component is a symbolic link.  Otherwise relative paths and symbolic links may be retained, as they do not affect the result.&lt;&#x2F;p&gt;
+&lt;p&gt;This is exactly what my &lt;a href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;real_parent&#x2F;&quot;&gt;&lt;code&gt;real_parent&lt;&#x2F;code&gt;&lt;&#x2F;a&gt; crate does.  With reference to the configuration example above:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;color:#c0c5ce;&quot;&gt;&lt;code&gt;&lt;span&gt;Path::new(&amp;quot;a&#x2F;main.cfg&amp;quot;)
+&lt;&#x2F;span&gt;&lt;span&gt;    .real_parent()
+&lt;&#x2F;span&gt;&lt;span&gt;    .unwrap()
+&lt;&#x2F;span&gt;&lt;span&gt;    .join(&amp;quot;included.cfg&amp;quot;)
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;&#x2F;&#x2F; returns &amp;quot;b&#x2F;included.cfg&amp;quot;, which is both correct and ergonomic
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;The &lt;code&gt;real_parent&lt;&#x2F;code&gt; Path extension method is reluctant to resolve symbolic links or relative paths unless this is required for correctness.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;history&quot;&gt;&lt;a class=&quot;zola-anchor&quot; href=&quot;#history&quot; aria-label=&quot;Anchor link for: history&quot;&gt;History&lt;&#x2F;a&gt;&lt;&#x2F;h2&gt;
+&lt;p&gt;The &lt;a href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;real_parent&#x2F;&quot;&gt;&lt;code&gt;real_parent&lt;&#x2F;code&gt;&lt;&#x2F;a&gt; crate was originally created with the intention of &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;nushell&#x2F;nushell&#x2F;pull&#x2F;13243&quot;&gt;improving the ergonomics around path handling in Nushell&lt;&#x2F;a&gt;. That PR was subsequently abandoned because it didn&#x27;t fit that particular case after all.  (The Nushell developers have worked hard to maintain an illusion of &lt;code&gt;cwd&lt;&#x2F;code&gt; per thread, which is undeniably convenenient in a multi-threaded shell, if somewhat jarring for anyone familiar with the Linux process environment, in which a single &lt;code&gt;cwd&lt;&#x2F;code&gt; for each process is maintained by the operating system.)&lt;&#x2F;p&gt;
+&lt;p&gt;The &lt;a href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;real_parent&#x2F;&quot;&gt;&lt;code&gt;real_parent&lt;&#x2F;code&gt;&lt;&#x2F;a&gt; crate hasn&#x27;t yet seen much use.  I welcome feedback from the community.
+The best documentation of its behaviour in various edge cases is its extensive &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;tesujimath&#x2F;real_parent&#x2F;blob&#x2F;main&#x2F;tests&#x2F;path_ext.rs&quot;&gt;test suite&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+</feed>

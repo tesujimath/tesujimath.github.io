@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en" class="dark light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="base" content="https:&#x2F;&#x2F;tesujimath.org">
+
+    
+
+    
+    
+    
+    <title>
+         Path canonicalization is unergonomic
+        
+    </title>
+
+        
+            <meta property="og:title" content="Path canonicalization is unergonomic" />
+        
+     
+
+     
+         
+             <meta property="og:description" content="Programming ponderations" />
+         
+     
+
+     
+         
+             <meta name="description" content="Programming ponderations" />
+         
+    
+
+    
+    
+
+    
+    
+        <link href=https://tesujimath.org/fonts.css rel="stylesheet" />
+    
+
+    
+    
+
+    
+    
+
+    
+    
+
+    
+    
+
+    
+
+    
+    <link rel="alternate" type="application/atom+xml" title="tesujimath" href="https://tesujimath.org/atom.xml">
+
+
+    
+    
+        <link rel="stylesheet" type="text/css" href=https://tesujimath.org/theme/light.css />
+        <link id="darkModeStyle" rel="stylesheet" type="text/css" href="https://tesujimath.org/theme/dark.css" />
+    
+
+    <!-- Set the correct theme in the script -->
+    <script src=https://tesujimath.org/js/themetoggle.js></script>
+    
+        <script>setTheme(getSavedTheme());</script>
+    
+
+    <link rel="stylesheet" type="text/css" media="screen" href=https://tesujimath.org/main.css />
+
+    
+
+    <script src=https://tesujimath.org/js/mermaid.js></script>
+
+    <script defer src="https://tesujimath.org/search_index.en.js?h=5f8092ec6b004a261fbf"></script>
+        <script defer src="https://tesujimath.org/js/searchElasticlunr.min.js?h=3626c0ef99daa745b31e"></script></head>
+
+
+<body>
+    <div class="content">
+        <header>
+    <div class="main">
+        
+            <a href=https:&#x2F;&#x2F;tesujimath.org>tesujimath</a>
+        
+
+
+        <div class="socials">
+            
+            <a rel="me" href="https:&#x2F;&#x2F;github.com&#x2F;tesujimath" class="social">
+                <img alt=github src=https://tesujimath.org/social_icons/github.svg>
+            </a>
+            
+        </div>
+    </div>
+
+    <nav>
+        
+            <a href=https://tesujimath.org/pages/about style="margin-left: 0.25em">about</a>
+        
+
+        
+        <button 
+            id="search-button"
+            class="search-button"
+            title="$SHORTCUT to open search"
+        >
+            <img 
+                src="https://tesujimath.org/search.svg" 
+                alt="Search" 
+                class="search-icon"
+            >
+        </button>
+
+        <div id="searchModal" class="search-modal js" role="dialog" aria-labelledby="modalTitle">
+            <div id="modal-content">
+                <h1 id="modalTitle" class="page-header">Search</h1>
+                <div id="searchBar">
+                    <input 
+                        id="searchInput" 
+                        role="combobox" 
+                        autocomplete="off" 
+                        spellcheck="false" 
+                        aria-expanded="false" 
+                        aria-controls="results-container" 
+                        placeholder="Search..."
+                    />
+                    <button 
+                        id="clear-search" 
+                        class="clear-button"
+                        title="Clear search"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960">
+                            <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div id="results-container">
+                    <div id="results-info">
+                        <span id="zero_results" style="display: none;">No results</span>
+                        <span id="one_result" style="display: none;">1 result</span>
+                        <span id="many_results" style="display: none;">$NUMBER results</span>
+                    </div>
+                    <div id="results" role="listbox"></div>
+                </div>
+            </div>
+        </div>
+        
+
+        
+            <a id="dark-mode-toggle" onclick="toggleTheme(); event.preventDefault();" href="#">
+                <img src=https://tesujimath.org/feather/sun.svg id="sun-icon" style="filter: invert(1);" alt="Light" />
+                <img src=https://tesujimath.org/feather/moon.svg id="moon-icon" alt="Dark" />
+            </a>
+
+            <!-- Inititialize the theme toggle icons -->
+            <script>updateItemToggleTheme()</script>
+        
+    </nav>
+</header>
+
+
+        
+        
+    
+<main>
+    <article>
+        <div class="title">
+            
+            
+    <div class="page-header">
+        Path canonicalization is unergonomic<span class="primary-color" style="font-size: 1.6em">.</span>
+    </div>
+
+
+                <div class="meta">
+                    
+                        Posted on <time>2025-01-20</time>
+                    
+
+                    
+
+                    
+
+                    
+                    
+                            <span class="tags-label"> :: Tags:</span>
+                            <span class="tags">
+                                    <a href="https://tesujimath.org/tags/rust/" class="post-tag">rust</a>
+                                
+                            </span>
+                    
+
+                    
+                    
+
+                    
+
+                </div>
+        </div>
+
+        
+
+        
+        
+
+        <section class="body">
+            <p>Rust programmers attach great importance to correctness and this is to be celebrated, but there are sometimes downsides.</p>
+<p>Path canonicalization has become prevalent in the Rust community, for reasons which I will explain.  It is a solution to a very real problemm but I  suggest that it is not a good solution and there is a better alternative.  I argue for increasing ergonomics at no cost in correctness.</p>
+<p>I will discuss <a href="https://tesujimath.org/path-canonicalization-is-unergonomic/#what">what path canonicalization is</a>, <a href="https://tesujimath.org/path-canonicalization-is-unergonomic/#why">why it is in widespread use</a>, <a href="https://tesujimath.org/path-canonicalization-is-unergonomic/#ergonomics">what is unergonomic about this approach</a>, and <a href="https://tesujimath.org/path-canonicalization-is-unergonomic/#an-alternative">a more ergonomic alternative</a>.</p>
+<h1 id="what"><a class="zola-anchor" href="#what" aria-label="Anchor link for: what">What</a></h1>
+<p>Path canonicalization is use of <a href="https://doc.rust-lang.org/std/fs/fn.canonicalize.html"><code>std::fs::canonicalize</code></a> aka <a href="https://doc.rust-lang.org/std/path/struct.Path.html#method.canonicalize"><code>Path::canonicalize</code></a>, which (to quote the documentation) returns the canonical, absolute form of a path with all intermediate components normalized and symbolic links resolved.</p>
+<p>That is, relative paths are made absolute (with reference to the current working directory, or <code>cwd</code>), and any symbolic links along the path are resolved to their ultimate destination, with reference to the filesystem.  "Ultimate" here acknowledges that symbolic links can refer to other symbolic links.  The resolution is ruthless in expunging all such links from the resulting path.</p>
+<p>Eager and early path canonicalization has become a common pattern in Rust programs.</p>
+<h1 id="why"><a class="zola-anchor" href="#why" aria-label="Anchor link for: why">Why</a></h1>
+<p>By far the the biggest reason for eager and early path canonicalization is to mitigate breakage in finding a parent directory, or the containing directory of a file.</p>
+<p>The Rust standard library method <a href="https://doc.rust-lang.org/std/path/struct.Path.html#method.parent"><code>Path::parent</code></a> determines this purely lexically, that is without reference to the filesystem.  Using this method on anything other than a canonicalized path could lead to an incorrect result.</p>
+<p>The problem arises when the last component in the path is a symbolic link. In that case, the parent or containing directory must be determined from the ultimate target of the symbolic link.</p>
+<p>For a thorough description of the problem, see Rob Pike's seminal paper <a href="https://9p.io/sys/doc/lexnames.html">Getting Dot-Dot Right</a>.</p>
+<p>Here's a simple example. Suppose that we have a configuration file format that supports file inclusion, so <code>main.cfg</code> contains the text <code>include "included.cfg"</code></p>
+<p>Perhaps we have a symbolic link to such a configuration.</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>/absolute/path/to/cwd/
+</span><span>│
+</span><span>├── a/
+</span><span>│   └── main.cfg ⟶ ../b/main.cfg
+</span><span>│
+</span><span>└── b/
+</span><span>    ├── main.cfg
+</span><span>    └── included.cfg
+</span></code></pre>
+<p>How should the program process the configuration file <code>a/main.cfg</code>?</p>
+<p>Here's the wrong way to do it.</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>Path::new(&quot;a/main.cfg&quot;)
+</span><span>    .parent()
+</span><span>    .unwrap()
+</span><span>    .join(&quot;included.cfg&quot;)
+</span><span>
+</span><span>// returns &quot;a/included.cfg&quot;, which doesn&#39;t exist
+</span></code></pre>
+<p>Here's a common solution to this problem.</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>        Path::new(&quot;a/main.cfg&quot;)
+</span><span>            .canonicalize()
+</span><span>            .unwrap()
+</span><span>            .parent()
+</span><span>            .unwrap()
+</span><span>            .join(&quot;included.cfg&quot;)
+</span><span>
+</span><span>// returns &quot;/absolute/path/to/cwd/b/included.cfg&quot;, which is correct but unergonomic
+</span></code></pre>
+<h1 id="ergonomics"><a class="zola-anchor" href="#ergonomics" aria-label="Anchor link for: ergonomics">Ergonomics</a></h1>
+<p>Ergonomics is about efficiency and comfort.  So what is unergonomic about using <code>Path::canonicalize()</code> to mitigate this potential problem?  Two things.</p>
+<ol>
+<li>
+<p>relative paths are discarded in favour of absolute paths</p>
+</li>
+<li>
+<p>symbolic links are ruthlessly resolved and eliminated</p>
+</li>
+</ol>
+<h2 id="relative-paths"><a class="zola-anchor" href="#relative-paths" aria-label="Anchor link for: relative-paths">Relative Paths</a></h2>
+<p>Relative paths enjoy the benefits of portability and simplicity.  Who has the luxury of the same absolute path for home directories on all their systems, or their project directories?</p>
+<h2 id="symbolic-links"><a class="zola-anchor" href="#symbolic-links" aria-label="Anchor link for: symbolic-links">Symbolic Links</a></h2>
+<p>Symbolic links are arguably a filesystem abstraction.  Using symbolic links, a view can be constructed for many and varied reasons.  Violating this abstraction by peeking inside the links is rude at best.</p>
+<p>Two examples of systems making extensive use of symbolic links are <a href="https://nixos.org/">Nix</a> and <a href="https://www.gnu.org/software/stow/">GNU Stow</a>.</p>
+<p><a href="https://nix-community.github.io/home-manager/">Nix Home Manager</a> brings the declarative and unified approach of Nix to managing one's home configuration, dotfiles, scripts, etc. Using Home Manager, all the usual dotfiles become symbolic links into the Nix store.  For example:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>&gt; ls -l .config/nushell/*.nu
+</span><span>.config/nushell/config.nu -&gt; /nix/store/mkfxkxgjsb81ad68rgyx2bzgq51rvw6b-home-manager-files/.config/nushell/config.nu
+</span><span>.config/nushell/env.nu -&gt; /nix/store/mkfxkxgjsb81ad68rgyx2bzgq51rvw6b-home-manager-files/.config/nushell/env.nu
+</span></code></pre>
+<p>It would be most uncomfortable if these Nix store paths became exposed to applications, or worse, stored in application configuration, not least because the paths in the Nix store depend on their content and so may be expected to change across Home Manager generations.</p>
+<h1 id="an-alternative"><a class="zola-anchor" href="#an-alternative" aria-label="Anchor link for: an-alternative">An alternative</a></h1>
+<p>If the goal is both correctness <em>and</em> ergonomics, what can be done?</p>
+<p>One answer is to abandon the standard library <a href="https://doc.rust-lang.org/std/path/struct.Path.html#method.parent"><code>Path::parent</code></a> method and instead determine the parent directory of a file with reference to the filesystem.  Special handling is required only in the case where the final path component is a symbolic link.  Otherwise relative paths and symbolic links may be retained, as they do not affect the result.</p>
+<p>This is exactly what my <a href="https://docs.rs/real_parent/"><code>real_parent</code></a> crate does.  With reference to the configuration example above:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>Path::new(&quot;a/main.cfg&quot;)
+</span><span>    .real_parent()
+</span><span>    .unwrap()
+</span><span>    .join(&quot;included.cfg&quot;)
+</span><span>
+</span><span>// returns &quot;b/included.cfg&quot;, which is both correct and ergonomic
+</span></code></pre>
+<p>The <code>real_parent</code> Path extension method is reluctant to resolve symbolic links or relative paths unless this is required for correctness.</p>
+<h2 id="history"><a class="zola-anchor" href="#history" aria-label="Anchor link for: history">History</a></h2>
+<p>The <a href="https://docs.rs/real_parent/"><code>real_parent</code></a> crate was originally created with the intention of <a href="https://github.com/nushell/nushell/pull/13243">improving the ergonomics around path handling in Nushell</a>. That PR was subsequently abandoned because it didn't fit that particular case after all.  (The Nushell developers have worked hard to maintain an illusion of <code>cwd</code> per thread, which is undeniably convenenient in a multi-threaded shell, if somewhat jarring for anyone familiar with the Linux process environment, in which a single <code>cwd</code> for each process is maintained by the operating system.)</p>
+<p>The <a href="https://docs.rs/real_parent/"><code>real_parent</code></a> crate hasn't yet seen much use.  I welcome feedback from the community.
+The best documentation of its behaviour in various edge cases is its extensive <a href="https://github.com/tesujimath/real_parent/blob/main/tests/path_ext.rs">test suite</a>.</p>
+
+        </section>
+    </article>
+</main>
+
+
+
+        
+            
+        
+
+        
+    </div>
+</body>
+
+</html>
